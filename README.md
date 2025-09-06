@@ -117,8 +117,10 @@ GET http://localhost:8080/api/bank/balance?userId=demo_user_123
 - `0` - Ошибка (недостаточно средств, пользователь не найден или ошибка выполнения)
 
 ## Структура базы данных
+1. **Скриншот структуры БД** находится в корне проекта, файл: ```structure_db.png```
+2. **Dump-файл БД** находится в корне проекта, файл: ```bank_db_dump.sql```
 
-Таблица `users`:
+#### Таблица `users`:
 - `id` (BIGINT, PRIMARY KEY, AUTO_INCREMENT)
 - `user_id` (VARCHAR, UNIQUE, NOT NULL)
 - `balance` (DOUBLE, NOT NULL, DEFAULT 0.0)
