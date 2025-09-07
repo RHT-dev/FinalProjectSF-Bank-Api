@@ -117,13 +117,21 @@ GET http://localhost:8080/api/bank/balance?userId=demo_user_123
 - `0` - Ошибка (недостаточно средств, пользователь не найден или ошибка выполнения)
 
 ## Структура базы данных
-1. **Скриншот структуры БД** находится в корне проекта, файл: ```structure_db.png```
-2. **Dump-файл БД** находится в корне проекта, файл: ```bank_db_dump.sql```
+1. **Скриншот структуры БД** находится в корне проекта, файл: `structude_db.png`
+2. **Dump-файлы БД** находятся в корне проекта: `bank_db_dump.sql`, `bank_db_dump_stage2.sql`
 
 #### Таблица `users`:
 - `id` (BIGINT, PRIMARY KEY, AUTO_INCREMENT)
 - `user_id` (VARCHAR, UNIQUE, NOT NULL)
 - `balance` (DOUBLE, NOT NULL, DEFAULT 0.0)
+
+#### Таблица `operations`:
+- `id` (BIGINT, PRIMARY KEY, AUTO_INCREMENT)
+- `user_fk` (BIGINT, NOT NULL, FK -> `users.id`, ON DELETE CASCADE)
+- `operation_type` (INTEGER, NOT NULL) — 1 = пополнение, 2 = списание
+- `counterparty_user_fk` (BIGINT, NULL, FK -> `users.id`) — контрагент для переводов
+- `amount` (DOUBLE, NOT NULL)
+- `created_at` (TIMESTAMP, NOT NULL)
 
 ## Особенности реализации
 
@@ -131,3 +139,37 @@ GET http://localhost:8080/api/bank/balance?userId=demo_user_123
 2. **Валидация данных**: Проверка положительности сумм и обязательных параметров
 3. **Транзакционность**: Все операции выполняются в транзакциях
 4. **Обработка ошибок**: Сообщения об ошибках для отладки
+
+### 4. Список операций пользователя
+
+**GET** `/api/bank/get-operations`
+
+Параметры:
+- `userId` (query) — обязательный
+- `from` (query, ISO 8601, опционально) — напр. `2024-01-01T00:00:00`
+- `to` (query, ISO 8601, опционально) — напр. `2024-12-31T23:59:59`
+
+Если даты не переданы — возвращаются все операции пользователя (включая переводы, поле контрагента присутсвует в сущности).
+
+### 5. Перевод денег между пользователями
+
+**POST** `/api/bank/transfer-money`
+
+Тело запроса:
+```json
+{
+  "fromUserId": "alice",
+  "toUserId": "bob",
+  "amount": 50.0
+}
+```
+
+Ответ при успехе:
+```json
+{
+  "status": 1,
+  "message": "Успех"
+}
+```
+
+Перевод выполняется атомарно (в одной транзакции): изменяются балансы обоих пользователей и создаются две записи в `operations` (списание у отправителя, зачисление у получателя) с заполненным `counterparty_user_fk`.

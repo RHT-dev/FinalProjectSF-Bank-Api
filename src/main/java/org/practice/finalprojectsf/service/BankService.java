@@ -114,6 +114,57 @@ public class BankService {
         return operationRepository.findByUserAndCreatedAtBetweenOptional(user, from, to);
     }
 
+    public BankOperationResult transferMoney(String fromUserId, String toUserId, Double amount) {
+        try {
+            if (amount == null || amount <= 0) {
+                return new BankOperationResult(0, "Сумма должна быть положительной");
+            }
+            if (fromUserId == null || toUserId == null || fromUserId.equals(toUserId)) {
+                return new BankOperationResult(0, "Некорректные пользователи для перевода");
+            }
+
+            User fromUser = userRepository.findByUserId(fromUserId).orElse(null);
+            if (fromUser == null) {
+                return new BankOperationResult(0, "Отправитель не найден");
+            }
+            User toUser = userRepository.findByUserId(toUserId).orElse(null);
+            if (toUser == null) {
+                // создаём получателя при первом переводе
+                toUser = new User(toUserId, 0.0);
+            }
+            if (fromUser.getBalance() < amount) {
+                return new BankOperationResult(0, "Недостаточно средств");
+            }
+
+            fromUser.setBalance(fromUser.getBalance() - amount);
+            toUser.setBalance(toUser.getBalance() + amount);
+            userRepository.save(fromUser);
+            userRepository.save(toUser);
+
+            // Логируем две операции: списание у отправителя и зачисление у получателя
+            LocalDateTime now = LocalDateTime.now();
+            Operation debit = new Operation();
+            debit.setUser(fromUser);
+            debit.setCounterpartyUser(toUser);
+            debit.setOperationType(2);
+            debit.setAmount(amount);
+            debit.setCreatedAt(now);
+            operationRepository.save(debit);
+
+            Operation credit = new Operation();
+            credit.setUser(toUser);
+            credit.setCounterpartyUser(fromUser);
+            credit.setOperationType(1);
+            credit.setAmount(amount);
+            credit.setCreatedAt(now);
+            operationRepository.save(credit);
+
+            return new BankOperationResult(1, "Успех");
+        } catch (Exception e) {
+            return new BankOperationResult(0, "Ошибка при выполнении операции: " + e.getMessage());
+        }
+    }
+
 
     public static class BankOperationResult {
         private int status;

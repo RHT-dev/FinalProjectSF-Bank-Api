@@ -122,4 +122,39 @@ public class BankController {
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
+
+    @PostMapping("/transfer-money")
+    public ResponseEntity<Map<String, Object>> transferMoney(@RequestBody Map<String, Object> request) {
+        String fromUserId = (String) request.get("fromUserId");
+        String toUserId = (String) request.get("toUserId");
+        Double amount = null;
+
+        Object amountObj = request.get("amount");
+        if (amountObj instanceof Number) {
+            amount = ((Number) amountObj).doubleValue();
+        } else if (amountObj instanceof String) {
+            try {
+                amount = Double.parseDouble((String) amountObj);
+            } catch (NumberFormatException e) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("status", 0);
+                errorResponse.put("message", "Неверный формат суммы");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+        }
+
+        if (fromUserId == null || toUserId == null || amount == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", 0);
+            errorResponse.put("message", "Отсутствуют обязательные параметры: fromUserId, toUserId и amount");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        BankService.BankOperationResult result = bankService.transferMoney(fromUserId, toUserId, amount);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", result.getStatus());
+        response.put("message", result.getMessage());
+        return ResponseEntity.ok(response);
+    }
 }

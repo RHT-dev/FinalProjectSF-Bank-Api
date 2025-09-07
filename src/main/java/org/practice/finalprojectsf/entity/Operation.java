@@ -28,6 +28,11 @@ public class Operation {
     @Column(name = "operation_type", nullable = false)
     private Integer operationType; // 1 = put, 2 = take
 
+    // Для переводов: контрагент (владелец другой стороны операции)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "counterparty_user_fk", foreignKey = @ForeignKey(name = "fk_operations_counterparty"))
+    private User counterpartyUser;
+
     @Column(name = "amount", nullable = false)
     private Double amount;
 
