@@ -89,5 +89,16 @@ public class BankControllerTest {
                 .andExpect(jsonPath("$.status").value(0))
                 .andExpect(jsonPath("$.message").value("Недостаточно средств"));
     }
+
+    @Test
+    public void testGetOperations_UserNotFound() throws Exception {
+        mockMvc.perform(get("/api/bank/get-operations")
+                        .param("userId", "nonexistent")
+                        .param("from", "2024-01-01T00:00:00")
+                        .param("to", "2024-12-31T23:59:59"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(0))
+                .andExpect(jsonPath("$.message").value("Пользователь не найден"));
+    }
 }
 

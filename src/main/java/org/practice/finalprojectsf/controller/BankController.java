@@ -1,11 +1,15 @@
 package org.practice.finalprojectsf.controller;
 
+import org.practice.finalprojectsf.entity.Operation;
 import org.practice.finalprojectsf.service.BankService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -100,5 +104,22 @@ public class BankController {
         response.put("message", result.getMessage());
         
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/get-operations")
+    public ResponseEntity<?> getOperations(
+            @RequestParam String userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
+    ) {
+        try {
+            List<Operation> operations = bankService.getOperationList(userId, from, to);
+            return ResponseEntity.ok(operations);
+        } catch (IllegalArgumentException ex) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", 0);
+            errorResponse.put("message", ex.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 }
